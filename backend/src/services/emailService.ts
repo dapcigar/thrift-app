@@ -1,103 +1,108 @@
 import nodemailer from 'nodemailer';
-import { formatCurrency } from '../utils/helpers';
 
-export class EmailService {
-  private transporter: nodemailer.Transporter;
-
-  constructor() {
-    this.transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST,
-      port: parseInt(process.env.SMTP_PORT || '587'),
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
+const transporter = nodemailer.createTransport({
+  host: process.env.SMTP_HOST,
+  port: parseInt(process.env.SMTP_PORT || '587'),
+  secure: process.env.SMTP_SECURE === 'true',
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
   }
+});
 
-  async sendServiceFeeNotification({
-    to,
-    amount,
-    userName
-  }: {
-    to: string;
-    amount: number;
-    userName: string;
-  }) {
-    const html = `
-      <h2>Service Fee Notification</h2>
-      <p>Hello ${userName},</p>
-      <p>A service fee of ${formatCurrency(amount)} has been charged for your recent transaction.</p>
-      <p>This fee helps us maintain and improve our platform services.</p>
-      <p>If you have any questions about this fee, please don't hesitate to contact our support team.</p>
-    `;
+export const sendWelcomeEmail = async (email: string, firstName: string) => {
+  const html = `
+    <h2>Welcome to ThriftApp!</h2>
+    <p>Hello ${firstName},</p>
+    <p>Thank you for joining ThriftApp. We're excited to help you manage your savings groups.</p>
+    <p>Get started by:</p>
+    <ul>
+      <li>Creating a new savings group</li>
+      <li>Joining an existing group</li>
+      <li>Setting up your profile</li>
+    </ul>
+  `;
 
-    await this.transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to,
-      subject: 'Service Fee Notification',
-      html
-    });
-  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: 'Welcome to ThriftApp',
+    html
+  });
+};
 
-  async sendServiceFeeCollectionReport({
-    to,
-    amount,
-    period,
-    adminName
-  }: {
-    to: string;
-    amount: number;
-    period: string;
-    adminName: string;
-  }) {
-    const html = `
-      <h2>Service Fee Collection Report</h2>
-      <p>Hello ${adminName},</p>
-      <p>Here's your service fee collection report for ${period}:</p>
-      <p>Total Amount Collected: ${formatCurrency(amount)}</p>
-      <p>You can view detailed analytics in your admin dashboard.</p>
-    `;
+export const sendPasswordResetEmail = async (email: string, token: string) => {
+  const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
+  
+  const html = `
+    <h2>Reset Your Password</h2>
+    <p>You requested to reset your password. Click the button below to proceed:</p>
+    <p>
+      <a href="${resetUrl}" style="background: #4F46E5; color: white; padding: 12px 24px; text-decoration: none; border-radius: 4px;">
+        Reset Password
+      </a>
+    </p>
+    <p>If you didn't request this, please ignore this email.</p>
+  `;
 
-    await this.transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to,
-      subject: `Service Fee Report - ${period}`,
-      html
-    });
-  }
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: 'Password Reset Request',
+    html
+  });
+};
 
-  async sendPaymentWithFeeConfirmation({
-    to,
-    userName,
-    paymentAmount,
-    feeAmount,
-    totalAmount
-  }: {
-    to: string;
-    userName: string;
-    paymentAmount: number;
-    feeAmount: number;
-    totalAmount: number;
-  }) {
-    const html = `
-      <h2>Payment Confirmation</h2>
-      <p>Hello ${userName},</p>
-      <p>Your payment has been processed successfully:</p>
-      <ul>
-        <li>Contribution Amount: ${formatCurrency(paymentAmount)}</li>
-        <li>Service Fee: ${formatCurrency(feeAmount)}</li>
-        <li>Total Amount: ${formatCurrency(totalAmount)}</li>
-      </ul>
-      <p>Thank you for using our platform!</p>
-    `;
+export const sendPasswordChangeConfirmation = async (email: string) => {
+  const html = `
+    <h2>Password Changed</h2>
+    <p>Your password has been successfully changed.</p>
+    <p>If you didn't make this change, please contact support immediately.</p>
+  `;
 
-    await this.transporter.sendMail({
-      from: process.env.SMTP_FROM,
-      to,
-      subject: 'Payment Confirmation',
-      html
-    });
-  }
-}
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: 'Password Changed Successfully',
+    html
+  });
+};
+
+export const sendPaymentReminder = async (email: string, groupName: string, amount: number, dueDate: Date) => {
+  const html = `
+    <h2>Payment Reminder</h2>
+    <p>This is a friendly reminder about your upcoming payment:</p>
+    <ul>
+      <li>Group: ${groupName}</li>
+      <li>Amount: $${amount}</li>
+      <li>Due Date: ${dueDate.toLocaleDateString()}</li>
+    </ul>
+    <p>Please ensure your payment is made on time to avoid any delays in the group's schedule.</p>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: `Payment Reminder for ${groupName}`,
+    html
+  });
+};
+
+export const sendPayoutNotification = async (email: string, groupName: string, amount: number) => {
+  const html = `
+    <h2>Payout Notification</h2>
+    <p>Great news! Your payout has been processed:</p>
+    <ul>
+      <li>Group: ${groupName}</li>
+      <li>Amount: $${amount}</li>
+    </ul>
+    <p>The funds should be available in your account within 1-2 business days.</p>
+  `;
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM,
+    to: email,
+    subject: `Payout Processed for ${groupName}`,
+    html
+  });
+};
